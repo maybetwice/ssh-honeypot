@@ -1,0 +1,167 @@
+# Honeypot Project Skeleton
+
+# Directory Structure (for reference)
+# honeypot/
+# ├── main.py
+# ├── config.py
+# ├── logger.py
+# ├── requirements.txt
+# ├── README.md
+# └── data/
+#     └── honeypot_log.txt
+
+# =====================
+# README.md
+# =====================
+"""
+# SSH Honeypot
+
+A lightweight, extensible SSH-style honeypot designed to capture attacker behavior for research, logging, and security analysis.
+
+## 🚀 Features
+- Fake SSH banner (OpenSSH emulation)
+- Logs all incoming connections
+- Captures attacker input without executing commands
+- Safe and isolated by design
+- Easy to deploy on a VPS
+
+## 📁 Project Structure
+```
+honeypot/
+ ├── main.py            # Honeypot server
+ ├── config.py          # Configuration (port, banner, paths)
+ ├── logger.py          # Logging utility
+ ├── requirements.txt   # Dependencies
+ ├── README.md          # Documentation
+ └── data/
+      └── honeypot_log.txt
+```
+
+## ▶️ Running the Honeypot
+```bash
+python3 main.py
+```
+The honeypot will start listening on port **2222**.
+
+## 🧪 Testing the Honeypot (Local)
+Use a TCP client:
+```powershell
+$client = New-Object System.Net.Sockets.TcpClient("127.0.0.1", 2222)
+$stream = $client.GetStream()
+$buffer = New-Object Byte[] 1024
+$stream.Read($buffer, 0, $buffer.Length) | Out-Null
+[System.Text.Encoding]::ASCII.GetString($buffer)
+```
+
+## 📄 Logs
+All logs are stored in:
+```
+data/honeypot_log.txt
+```
+Example log entry:
+```
+[2025-01-01 12:41:03] Connection from 192.168.1.15
+```
+
+## 🌐 Deployment
+You can deploy this honeypot on:
+- DigitalOcean / Linode / Vultr VPS
+- AWS / Azure / GCP VM
+- Raspberry Pi exposed via port forwarding
+
+## 📌 Roadmap
+- Add GeoIP lookup
+- Add JSON structured logging
+- Add a web dashboard (Flask + Chart.js)
+- Add Docker support
+- Multi-port honeypot support
+- Fake interactive shell
+
+## 📜 License
+MIT License
+"""
+"""
+# Simple SSH Honeypot
+
+A lightweight SSH-style honeypot designed to log malicious connection attempts.
+
+## Features
+- Fake SSH banner
+- Logs all incoming connections
+- Captures attacker inputs
+- Writes logs to file
+- Safe: does not execute commands
+
+## Run
+```bash
+python3 main.py
+```
+
+## Future Improvements
+- Add GeoIP lookup
+- Add JSON structured logging
+- Add a web dashboard
+- Add Docker deployment
+"""
+
+# =====================
+# requirements.txt
+# =====================
+"""
+# No external dependencies required yet
+"""
+
+# =====================
+# config.py
+# =====================
+HOST = "0.0.0.0"
+PORT = 2222
+LOG_FILE = "data/honeypot_log.txt"
+BANNER = b"SSH-2.0-OpenSSH_8.2\r\n"
+DENY_MESSAGE = b"Permission denied.\r\n"
+
+# =====================
+# logger.py
+# =====================
+import datetime
+from config import LOG_FILE
+
+def log(event: str):
+    with open(LOG_FILE, "a") as f:
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        f.write(f"[{timestamp}] {event}\n")
+
+# =====================
+# main.py
+# =====================
+import socket
+from config import HOST, PORT, BANNER, DENY_MESSAGE
+from logger import log
+
+
+def start_honeypot():
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.bind((HOST, PORT))
+    server.listen(5)
+
+    print(f"[+] Honeypot running on port {PORT}...")
+
+    while True:
+        conn, addr = server.accept()
+        ip = addr[0]
+        log(f"Connection from {ip}")
+
+        conn.send(BANNER)
+        try:
+            data = conn.recv(1024)
+            if data:
+                log(f"Received data from {ip}: {data.decode(errors='ignore')}")
+        except Exception as e:
+            log(f"Error reading from {ip}: {e}")
+
+        conn.send(DENY_MESSAGE)
+        conn.close()
+
+
+if __name__ == "__main__":
+    start_honeypot()
